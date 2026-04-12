@@ -1,0 +1,40 @@
+services:
+  backend:
+    build: ./backend
+    container_name: app_backend
+    restart: always
+    environment:
+      DB_HOST: "pueblo_db_postgres"
+      DB_PORT: 5432
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "Dgb5P@stelit@5"
+      POSTGRES_DB: "pitsi_app"
+      PORT: 3003
+      JWT_SECRET: "jwt_secret_key_for_pitsi_=-+*"
+    ports:
+      - "127.0.0.1:3003:3003"
+    networks:
+      - app-network
+      - red_bbdd_compartida
+  frontend:
+    build: ./frontend
+    container_name: app_frontend
+    restart: always
+    ports:
+      - "127.0.0.1:2525:4321"
+    environment:
+      - PUBLIC_API_URL=https://gcpr.dgarbla.com/api
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+  red_bbdd_compartida:
+    name: red_bbdd  # El nombre REAL de la red que ya existe
+    external: true
+
+volumes:
+  db_data:

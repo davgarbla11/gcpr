@@ -1,0 +1,294 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+    try {
+        // AHORA APUNTAMOS A LA RUTA PÚBLICA DE IDs:
+        const res = await fetch('http://app_backend:3003/api/events/public/ids');
+        const data = await res.json();
+
+        if (!data.success || !data.events) return [];
+
+        return data.events.map((event) => {
+            return {
+                params: { id: event.id.toString() }
+            };
+        });
+    } catch (error) {
+        console.error("Error cargando las rutas estáticas:", error);
+        return [];
+    }
+}
+
+// 2. Extraemos el ID para usarlo en el HTML/JS
+const { id } = Astro.params;
+
+---
+
+
+
+<Layout title="Dashboard del Evento">
+    <div class="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6 relative z-10">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
+            <a href="/eventos" class="text-neutral-400 hover:text-white flex items-center gap-2 transition-colors self-start sm:self-auto">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Volver
+            </a>
+            <div class="text-center sm:text-right">
+                <h2 id="event-title" class="text-4xl md:text-5xl font-raleway font-black text-white tracking-tight drop-shadow-md">
+                    Cargando...
+                </h2>
+                <p class="text-neutral-400 mt-2 font-medium">Haz click para registrar un nuevo consumo</p>
+            </div>
+        </div>
+        
+        <div id="dynamic-options" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <p class="text-center text-neutral-500 w-full col-span-full">Cargando opciones...</p>
+        </div>
+
+        <div class="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl shadow-2xl p-6 mb-12 relative z-10">
+            <h3 class="text-xl font-raleway font-bold text-white mb-4 flex items-center gap-2">Tu Actividad (Últimos 7 días)</h3>
+            <div class="w-full h-64">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-raleway font-bold text-white tracking-tight drop-shadow-md flex justify-center items-center gap-3">Ranking del Evento</h2>
+        </div>
+
+        <div class="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl shadow-2xl overflow-hidden relative z-10 mb-10">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-neutral-800/50 text-neutral-300 text-sm uppercase tracking-wider border-b border-neutral-700">
+                            <th class="py-4 px-6 font-bold">#</th>
+                            <th class="py-4 px-6 font-bold">Usuario</th>
+                            <th class="py-4 px-6 font-bold text-center">Total Consumos</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body" class="divide-y divide-neutral-800/50 text-neutral-200">
+                        <tr><td colspan="3" class="py-8 text-center text-neutral-500">Cargando ranking...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+</Layout>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const token = localStorage.getItem('pitsi_token');
+    if (!token) window.location.href = '/';
+
+    // 1. Extraemos el ID del evento de la URL (ej: /eventos/1 -> 1)
+    const eventId = window.location.pathname.split('/').filter(Boolean).pop();
+    
+    // 2. Base URL limpia
+    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || '/api';
+    
+    let chartInstance: any = null;
+    let eventOptions: any[] = [];
+
+    // Función para el Toast
+    const showToast = (message: string, icon: string) => {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'bg-neutral-800/90 backdrop-blur-md border border-neutral-700 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-300 font-medium';
+        toast.innerHTML = `<span class="text-2xl">${icon}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+        setTimeout(() => {
+            toast.classList.add('translate-y-10', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    };
+
+    // 1. Cargar las opciones del evento
+    const loadEventData = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/events/${eventId}/options`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                eventOptions = data.options;
+                document.getElementById('event-title')!.textContent = "Mi Conteo";
+                
+                const container = document.getElementById('dynamic-options');
+                if (!container) return;
+                container.innerHTML = '';
+                
+                eventOptions.forEach(opt => {
+                    container.innerHTML += `
+                        <div class="group bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl p-6 flex flex-col items-center shadow-2xl relative overflow-hidden transition-transform duration-300 hover:-translate-y-1">
+                            <div class="absolute inset-0 bg-gradient-to-b from-neutral-800/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                            <div class="bg-neutral-800/80 p-3 rounded-2xl mb-2 border border-neutral-700/50 shadow-inner">
+                                <span class="text-4xl block transform transition-transform group-hover:scale-110 duration-300">${opt.icon}</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-neutral-300 uppercase tracking-widest">${opt.name}</h3>
+                            <p class="number text-6xl font-raleway font-black text-white my-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]" id="count-${opt.id}">0</p>
+                            <button class="add-btn w-full bg-neutral-800 hover:bg-ritsi text-white font-exo font-bold text-lg py-3 rounded-xl transition-all duration-300 transform active:scale-95 border border-neutral-700 hover:border-ritsi hover:shadow-[0_0_20px_rgba(218,39,36,0.4)] relative z-10" 
+                                data-id="${opt.id}" data-name="${opt.name}" data-icon="${opt.icon}">
+                                +1 ${opt.name}
+                            </button>
+                        </div>
+                    `;
+                });
+
+                // Asignar eventos a los botones
+                document.querySelectorAll('.add-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const target = e.currentTarget as HTMLButtonElement;
+                        addConsumption(target.getAttribute('data-id'), target);
+                    });
+                });
+
+                initChart();
+                fetchStats();
+                fetchLeaderboard();
+                fetchHistory();
+            }
+        } catch (error) { console.error("Error", error); }
+    };
+
+    // 2. Registrar el consumo
+    const addConsumption = async (optionId: string | null, btnElement: HTMLButtonElement) => {
+        if (!optionId) return;
+        const originalText = btnElement.innerHTML;
+        const icon = btnElement.getAttribute('data-icon') || '✅';
+        const name = btnElement.getAttribute('data-name') || '';
+
+        btnElement.innerHTML = '<span class="animate-pulse">Cargando...</span>';
+        btnElement.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/consume`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ event_id: eventId, option_id: optionId })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                await fetchStats();
+                await fetchLeaderboard(); 
+                await fetchHistory(); 
+                showToast(`¡Un ${name} más añadido!`, icon);
+            }
+        } catch (error) { showToast('❌ Error al guardar', ''); } 
+        finally { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+    };
+
+    // 3. Obtener el número grande
+    const fetchStats = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/consume/stats/${eventId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                Object.keys(data.stats).forEach(optId => {
+                    const counter = document.getElementById(`count-${optId}`);
+                    if (counter) counter.textContent = data.stats[optId];
+                });
+            }
+        } catch (error) { console.error(error); }
+    };
+
+    // 4. Leaderboard
+    const fetchLeaderboard = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/consume/leaderboard/${eventId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                const tbody = document.getElementById('leaderboard-body');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                data.leaderboard.forEach((user: any, index: number) => {
+                    let rankMedal = `${index + 1}`;
+                    if (index === 0) rankMedal = '🥇'; if (index === 1) rankMedal = '🥈'; if (index === 2) rankMedal = '🥉';
+                    const isMe = user.username === localStorage.getItem('pitsi_email')?.split('@')[0] || false; 
+                    const rowClass = isMe ? 'bg-ritsi/10 font-bold text-white' : 'hover:bg-neutral-800/30 transition-colors';
+                    tbody.innerHTML += `
+                        <tr class="${rowClass}">
+                            <td class="py-4 px-6 text-lg">${rankMedal}</td>
+                            <td class="py-4 px-6 flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs text-neutral-400 font-bold border border-neutral-700">
+                                    ${user.username.substring(0, 2).toUpperCase()}
+                                </div>
+                                ${user.username} ${isMe ? '<span class="text-xs bg-ritsi text-white px-2 py-0.5 rounded-full ml-2">Tú</span>' : ''}
+                            </td>
+                            <td class="py-4 px-6 text-center font-mono text-lg">${user.total_consumos}</td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (error) { console.error(error); }
+    };
+
+    // 5. Gráfica
+    const initChart = () => {
+        const ctx = document.getElementById('historyChart') as HTMLCanvasElement;
+        const dynamicDatasets = eventOptions.map(opt => ({
+            label: `${opt.name} ${opt.icon}`,
+            data: [],
+            backgroundColor: opt.color || '#da2724',
+            borderRadius: 4,
+            _optionId: opt.id 
+        }));
+
+        // @ts-ignore
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: [], datasets: dynamicDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#a3a3a3', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { ticks: { color: '#a3a3a3' }, grid: { display: false } }
+                },
+                plugins: { legend: { labels: { color: '#e5e5e5', font: { family: 'Exo' } } } }
+            }
+        });
+    };
+
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/consume/history/${eventId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success && chartInstance) {
+                const last7Days = Array.from({length: 7}, (_, i) => {
+                    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+                    return d.toISOString().split('T')[0];
+                });
+
+                const shortLabels = last7Days.map(date => {
+                    const [, month, day] = date.split('-');
+                    return `${day}/${month}`;
+                });
+
+                chartInstance.data.labels = shortLabels;
+
+                chartInstance.data.datasets.forEach((dataset: any) => {
+                    const optId = dataset._optionId;
+                    const optData = last7Days.map(date => {
+                        const record = data.history.find((h: any) => h.date === date && h.event_option_id === optId);
+                        return record ? parseInt(record.total) : 0;
+                    });
+                    dataset.data = optData;
+                });
+
+                chartInstance.update();
+            }
+        } catch (error) { console.error("Error history", error); }
+    };
+
+    // Arrancar
+    loadEventData();
+</script>

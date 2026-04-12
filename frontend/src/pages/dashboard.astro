@@ -1,0 +1,246 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Dashboard">
+	<div class="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6 relative z-10">
+		
+		<div class="text-center mb-10">
+			<h2 class="text-4xl md:text-5xl font-raleway font-black text-white tracking-tight drop-shadow-md">
+				Mi Conteo
+			</h2>
+			<p class="text-neutral-400 mt-2 font-medium">Haz click para registrar un nuevo consumo</p>
+		</div>
+		
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+			<div class="group bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl p-6 flex flex-col items-center shadow-2xl relative overflow-hidden transition-transform duration-300 hover:-translate-y-1">
+				<div class="absolute inset-0 bg-gradient-to-b from-neutral-800/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+				<div class="bg-neutral-800/80 p-3 rounded-2xl mb-2 border border-neutral-700/50 shadow-inner">
+					<span class="text-4xl block transform transition-transform group-hover:scale-110 duration-300">🚬</span>
+				</div>
+				<h3 class="text-lg font-bold text-neutral-300 uppercase tracking-widest">Cigarros</h3>
+				<p class="number text-6xl font-raleway font-black text-white my-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]" id="count-cigarro">0</p>
+				<button class="add-btn w-full bg-neutral-800 hover:bg-ritsi text-white font-exo font-bold text-lg py-3 rounded-xl transition-all duration-300 transform active:scale-95 border border-neutral-700 hover:border-ritsi hover:shadow-[0_0_20px_rgba(218,39,36,0.4)] relative z-10" data-type="cigarro">
+					+1 Cigarro
+				</button>
+			</div>
+
+			<div class="group bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl p-6 flex flex-col items-center shadow-2xl relative overflow-hidden transition-transform duration-300 hover:-translate-y-1">
+				<div class="absolute inset-0 bg-gradient-to-b from-neutral-800/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+				<div class="bg-neutral-800/80 p-3 rounded-2xl mb-2 border border-neutral-700/50 shadow-inner">
+					<span class="text-4xl block transform transition-transform group-hover:scale-110 duration-300">🍹</span>
+				</div>
+				<h3 class="text-lg font-bold text-neutral-300 uppercase tracking-widest">Cubatas</h3>
+				<p class="number text-6xl font-raleway font-black text-white my-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]" id="count-cubata">0</p>
+				<button class="add-btn w-full bg-neutral-800 hover:bg-ritsi text-white font-exo font-bold text-lg py-3 rounded-xl transition-all duration-300 transform active:scale-95 border border-neutral-700 hover:border-ritsi hover:shadow-[0_0_20px_rgba(218,39,36,0.4)] relative z-10" data-type="cubata">
+					+1 Cubata
+				</button>
+			</div>
+		</div>
+
+		<div class="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl shadow-2xl p-6 mb-12 relative z-10">
+			<h3 class="text-xl font-raleway font-bold text-white mb-4 flex items-center gap-2">
+				Tu Actividad (Últimos 7 días)
+			</h3>
+			<div class="w-full h-64">
+				<canvas id="historyChart"></canvas>
+			</div>
+		</div>
+
+		<div class="text-center mb-6">
+			<h2 class="text-3xl font-raleway font-bold text-white tracking-tight drop-shadow-md flex justify-center items-center gap-3">
+				Ranking General
+			</h2>
+			<p class="text-neutral-400 mt-2 font-medium text-sm">Aqui se demuestra todo.</p>
+		</div>
+
+		<div class="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl shadow-2xl overflow-hidden relative z-10 mb-10">
+			<div class="overflow-x-auto">
+				<table class="w-full text-left border-collapse">
+					<thead>
+						<tr class="bg-neutral-800/50 text-neutral-300 text-sm uppercase tracking-wider border-b border-neutral-700">
+							<th class="py-4 px-6 font-bold">#</th>
+							<th class="py-4 px-6 font-bold">Usuario</th>
+							<th class="py-4 px-6 font-bold text-center">Cigarros</th>
+							<th class="py-4 px-6 font-bold text-center">Cubatas</th>
+						</tr>
+					</thead>
+					<tbody id="leaderboard-body" class="divide-y divide-neutral-800/50 text-neutral-200">
+						<tr><td colspan="4" class="py-8 text-center text-neutral-500">Cargando ranking...</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+	</div>
+
+	<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+</Layout>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+	const token = localStorage.getItem('pitsi_token');
+	if (!token) window.location.href = '/';
+
+	const API_BASE_URL = import.meta.env.PUBLIC_API_URL || '/api';
+	const API_URL = `${API_BASE_URL}/consume`;
+	
+	let chartInstance: any = null;
+
+	const showToast = (message: string, icon: string) => {
+		const container = document.getElementById('toast-container');
+		if (!container) return;
+		const toast = document.createElement('div');
+		toast.className = 'bg-neutral-800/90 backdrop-blur-md border border-neutral-700 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-300 font-medium';
+		toast.innerHTML = `<span class="text-2xl">${icon}</span> ${message}`;
+		container.appendChild(toast);
+		setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+		setTimeout(() => {
+			toast.classList.add('translate-y-10', 'opacity-0');
+			setTimeout(() => toast.remove(), 300);
+		}, 3000);
+	};
+
+	const fetchStats = async () => {
+		try {
+			const res = await fetch(`${API_URL}/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
+			if (res.status === 401 || res.status === 403) { localStorage.clear(); window.location.href = '/'; return; }
+			const data = await res.json();
+			if (data.success) {
+				document.getElementById('count-cigarro')!.textContent = data.stats.cigarro || 0;
+				document.getElementById('count-cubata')!.textContent = data.stats.cubata || 0;
+			}
+		} catch (error) { console.error("Error stats", error); }
+	};
+
+	const fetchLeaderboard = async () => {
+		try {
+			const res = await fetch(`${API_URL}/leaderboard`, { headers: { 'Authorization': `Bearer ${token}` } });
+			const data = await res.json();
+			if (data.success) {
+				const tbody = document.getElementById('leaderboard-body');
+				if (!tbody) return;
+				tbody.innerHTML = '';
+				data.leaderboard.forEach((user: any, index: number) => {
+					let rankMedal = `${index + 1}`;
+					if (index === 0) rankMedal = '🥇'; if (index === 1) rankMedal = '🥈'; if (index === 2) rankMedal = '🥉';
+					const isMe = user.username === localStorage.getItem('pitsi_email')?.split('@')[0] || false; 
+					const rowClass = isMe ? 'bg-ritsi/10 font-bold text-white' : 'hover:bg-neutral-800/30 transition-colors';
+					tbody.innerHTML += `
+						<tr class="${rowClass}">
+							<td class="py-4 px-6 text-lg">${rankMedal}</td>
+							<td class="py-4 px-6 flex items-center gap-2">
+								<div class="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs text-neutral-400 font-bold border border-neutral-700">
+									${user.username.substring(0, 2).toUpperCase()}
+								</div>
+								${user.username} ${isMe ? '<span class="text-xs bg-ritsi text-white px-2 py-0.5 rounded-full ml-2">Tú</span>' : ''}
+							</td>
+							<td class="py-4 px-6 text-center font-mono text-lg">${user.cigarros}</td>
+							<td class="py-4 px-6 text-center font-mono text-lg">${user.cubatas}</td>
+						</tr>
+					`;
+				});
+			}
+		} catch (error) { console.error("Error leaderboard", error); }
+	};
+
+	const initChart = () => {
+		const ctx = document.getElementById('historyChart') as HTMLCanvasElement;
+		// @ts-ignore
+		chartInstance = new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: [], // Se llenará dinámicamente
+				datasets: [
+					{ label: 'Cigarros 🚬', data: [], backgroundColor: '#da2724', borderRadius: 4 },
+					{ label: 'Cubatas 🍹', data: [], backgroundColor: '#facc15', borderRadius: 4 } // Amarillo dorado para contraste
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				scales: {
+					y: { beginAtZero: true, ticks: { color: '#a3a3a3', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+					x: { ticks: { color: '#a3a3a3' }, grid: { display: false } }
+				},
+				plugins: { legend: { labels: { color: '#e5e5e5', font: { family: 'Exo' } } } }
+			}
+		});
+	};
+
+	const fetchHistory = async () => {
+		try {
+			const res = await fetch(`${API_URL}/history`, { headers: { 'Authorization': `Bearer ${token}` } });
+			const data = await res.json();
+			if (data.success && chartInstance) {
+				// 1. Generar los últimos 7 días (para que no falten fechas vacías en la gráfica)
+				const last7Days = Array.from({length: 7}, (_, i) => {
+					const d = new Date(); d.setDate(d.getDate() - (6 - i));
+					return d.toISOString().split('T')[0];
+				});
+
+				const cigarrosData = last7Days.map(date => {
+					const record = data.history.find((h: any) => h.date === date && h.type === 'cigarro');
+					return record ? parseInt(record.total) : 0;
+				});
+
+				const cubatasData = last7Days.map(date => {
+					const record = data.history.find((h: any) => h.date === date && h.type === 'cubata');
+					return record ? parseInt(record.total) : 0;
+				});
+
+				// Formatear las fechas a algo más legible (ej. "01-Abr")
+				const shortLabels = last7Days.map(date => {
+					const [, month, day] = date.split('-');
+					return `${day}/${month}`;
+				});
+
+				// Actualizar la gráfica
+				chartInstance.data.labels = shortLabels;
+				chartInstance.data.datasets[0].data = cigarrosData;
+				chartInstance.data.datasets[1].data = cubatasData;
+				chartInstance.update();
+			}
+		} catch (error) { console.error("Error history", error); }
+	};
+
+	const addConsumption = async (type: string, btnElement: HTMLButtonElement) => {
+		const originalText = btnElement.innerHTML;
+		btnElement.innerHTML = '<span class="animate-pulse">Cargando...</span>';
+		btnElement.disabled = true;
+
+		try {
+			const res = await fetch(API_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+				body: JSON.stringify({ type })
+			});
+			const data = await res.json();
+			
+			if (data.success) {
+				await fetchStats(); 
+				await fetchLeaderboard(); 
+				await fetchHistory(); // Recargar gráfica
+				
+				const icon = type === 'cigarro' ? '🚬' : '🍹';
+				const nombre = type === 'cigarro' ? 'Cigarro' : 'Cubata';
+				showToast(`¡Un ${nombre} más añadido!`, icon);
+			}
+		} catch (error) { showToast('❌ Error al guardar', ''); } 
+		finally { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+	};
+
+	document.querySelectorAll('.add-btn').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const target = e.currentTarget as HTMLButtonElement;
+			const type = target.getAttribute('data-type');
+			if (type) addConsumption(type, target);
+		});
+	});
+
+	initChart();
+	fetchStats();
+	fetchLeaderboard();
+	fetchHistory();
+</script>
