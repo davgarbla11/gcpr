@@ -46,6 +46,7 @@ const initDB = async () => {
         consumed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);`);
     console.log('✅ Tablas inicializadas para el sistema de Eventos.');
   } catch (err) {
     console.error('❌ Error inicializando la base de datos:', err);

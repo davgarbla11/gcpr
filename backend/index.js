@@ -1,8 +1,9 @@
 const express = require('express');
+const path = require('path');
 const { initDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const consumicionRoutes = require('./routes/consumicionRoutes');
-const eventRoutes = require('./routes/eventRoutes'); // <-- Importas la ruta
+const eventRoutes = require('./routes/eventRoutes'); 
 
 // 1. INICIALIZAS LA APP PRIMERO
 const app = express();
@@ -10,6 +11,7 @@ const PORT = process.env.PORT || 3003;
 
 // 2. CONFIGURAS LOS MIDDLEWARES BÁSICOS
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');

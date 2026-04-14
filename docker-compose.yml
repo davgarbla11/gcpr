@@ -13,6 +13,8 @@ services:
       JWT_SECRET: "jwt_secret_key_for_pitsi_=-+*"
     ports:
       - "127.0.0.1:3003:3003"
+    volumes:
+      - ./backend/uploads:/app/uploads
     networks:
       - app-network
       - red_bbdd_compartida

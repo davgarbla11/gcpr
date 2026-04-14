@@ -1,8 +1,21 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
 const { pool } = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'jwt_secret_key_for_pitsi_=-+*';
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/avatars/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, `user-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({ storage: storage });
 
 const register = async (req, res) => {
   try {
@@ -66,4 +79,32 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const getProfile = async (req, res) => {
+    try {
+        const userRes = await pool.query('SELECT id, username, email, avatar FROM users WHERE id = $1', [req.user.id]);
+        
+        const consumosGen = await pool.query("SELECT COUNT(*) FROM consumptions WHERE user_id = $1", [req.user.id]);
+        const consumosEvt = await pool.query("SELECT COUNT(*) FROM event_consumptions WHERE user_id = $1", [req.user.id]);
+        
+        const total = parseInt(consumosGen.rows[0].count) + parseInt(consumosEvt.rows[0].count);
+
+        res.json({ success: true, user: userRes.rows[0], totalConsumos: total });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+const uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, error: 'No se subió ninguna imagen' });
+        
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatarUrl, req.user.id]);
+        
+        res.json({ success: true, avatarUrl });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+module.exports = { register, login, getProfile, uploadAvatar, upload };
