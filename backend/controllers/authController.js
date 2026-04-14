@@ -79,14 +79,15 @@ const login = async (req, res) => {
   }
 };
 
+// Función 1: Obtener los datos del Perfil
 const getProfile = async (req, res) => {
     try {
         const userRes = await pool.query('SELECT id, username, email, avatar FROM users WHERE id = $1', [req.user.id]);
         
+        // ¡Corregido! Contamos todo directamente de tu tabla unificada 'consumptions'
         const consumosGen = await pool.query("SELECT COUNT(*) FROM consumptions WHERE user_id = $1", [req.user.id]);
-        const consumosEvt = await pool.query("SELECT COUNT(*) FROM event_consumptions WHERE user_id = $1", [req.user.id]);
         
-        const total = parseInt(consumosGen.rows[0].count) + parseInt(consumosEvt.rows[0].count);
+        const total = parseInt(consumosGen.rows[0].count);
 
         res.json({ success: true, user: userRes.rows[0], totalConsumos: total });
     } catch (err) {
