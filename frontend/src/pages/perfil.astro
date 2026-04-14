@@ -3,40 +3,54 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="Mi Perfil">
-    <div class="max-w-3xl mx-auto w-full p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6 relative z-10">
+    <div class="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 mt-4 sm:mt-6 relative z-10">
         
         <div class="flex justify-between items-center mb-10">
             <a href="/eventos" class="text-neutral-400 hover:text-white flex items-center gap-2 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Volver
             </a>
-            <h2 class="text-3xl font-raleway font-black text-white tracking-tight drop-shadow-md">Mi Perfil</h2>
+            <h2 class="text-4xl font-raleway font-black text-white tracking-tight drop-shadow-md">Mi Perfil</h2>
             <div class="w-20"></div> </div>
 
-        <div class="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl shadow-2xl p-8 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-ritsi/5 rounded-full blur-[80px] pointer-events-none"></div>
+        <div class="bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/60 rounded-3xl shadow-2xl p-8 lg:p-12 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-ritsi/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-            <div class="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            <div class="flex flex-col md:flex-row items-center gap-10 md:gap-14 relative z-10">
                 
-                <div class="relative group cursor-pointer" id="avatar-container">
-                    <div class="w-32 h-32 rounded-full border-4 border-neutral-800 bg-neutral-950 flex items-center justify-center overflow-hidden relative shadow-xl">
+                <div class="relative group cursor-pointer shrink-0" id="avatar-container">
+                    <div class="w-48 h-48 md:w-56 md:h-56 rounded-full border-4 border-neutral-700 bg-neutral-950 flex items-center justify-center overflow-hidden relative shadow-[0_0_30px_rgba(0,0,0,0.5)] group-hover:border-ritsi transition-colors duration-300">
                         <img id="profile-img" src="" class="w-full h-full object-cover hidden" alt="Avatar" />
-                        <span id="profile-initials" class="text-4xl font-bold text-neutral-500">?</span>
+                        <span id="profile-initials" class="text-6xl font-bold text-neutral-500">?</span>
                         
-                        <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm">
+                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </div>
                     </div>
                     <input type="file" id="avatar-input" accept="image/*" class="hidden" />
                 </div>
 
-                <div class="flex-grow text-center md:text-left">
-                    <h3 id="user-name" class="text-3xl font-raleway font-bold text-white mb-1">Cargando...</h3>
-                    <p id="user-email" class="text-neutral-400 font-medium mb-6">correo@ejemplo.com</p>
+                <div class="flex-grow text-center md:text-left w-full">
+                    <h3 id="user-name" class="text-4xl md:text-5xl font-raleway font-bold text-white mb-2">Cargando...</h3>
+                    <p id="user-email" class="text-neutral-400 font-medium mb-8 text-lg">correo@ejemplo.com</p>
                     
-                    <div class="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-4 inline-block">
-                        <p class="text-sm text-neutral-400 uppercase tracking-wider font-bold mb-1">Consumos Totales (Histórico)</p>
-                        <p id="total-consumos" class="text-4xl font-black text-ritsi drop-shadow-[0_0_15px_rgba(218,39,36,0.3)]">0</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        
+                        <div class="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-5 flex flex-col items-center justify-center transition-transform hover:-translate-y-1 hover:border-ritsi/50">
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider font-bold mb-2">Día a Día</p>
+                            <p id="total-diarios" class="text-4xl font-black text-ritsi drop-shadow-[0_0_15px_rgba(218,39,36,0.3)]">0</p>
+                        </div>
+
+                        <div class="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-5 flex flex-col items-center justify-center transition-transform hover:-translate-y-1 hover:border-yellow-500/50">
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider font-bold mb-2">En Eventos</p>
+                            <p id="total-eventos" class="text-4xl font-black text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.3)]">0</p>
+                        </div>
+
+                        <div class="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-5 flex flex-col items-center justify-center transition-transform hover:-translate-y-1 hover:border-white/30">
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider font-bold mb-2">Total Histórico</p>
+                            <p id="total-consumos" class="text-4xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">0</p>
+                        </div>
+
                     </div>
                 </div>
 
@@ -58,7 +72,6 @@ import Layout from '../layouts/Layout.astro';
     const profileImg = document.getElementById('profile-img') as HTMLImageElement;
     const profileInitials = document.getElementById('profile-initials');
 
-    // Función para el Toast
     const showToast = (message: string, icon: string) => {
         const container = document.getElementById('toast-container');
         if (!container) return;
@@ -73,7 +86,6 @@ import Layout from '../layouts/Layout.astro';
         }, 3000);
     };
 
-    // 1. Cargar datos del perfil
     const loadProfile = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/auth/profile`, {
@@ -84,10 +96,14 @@ import Layout from '../layouts/Layout.astro';
             if (data.success) {
                 document.getElementById('user-name')!.textContent = data.user.username;
                 document.getElementById('user-email')!.textContent = data.user.email;
+                
+                // Actualizamos las 3 tarjetas de métricas
                 document.getElementById('total-consumos')!.textContent = data.totalConsumos;
+                document.getElementById('total-diarios')!.textContent = data.consumosDiarios;
+                document.getElementById('total-eventos')!.textContent = data.consumosEventos;
 
                 if (data.user.avatar) {
-                    profileImg.src = data.user.avatar; // La URL ya viene con /api/uploads/...
+                    profileImg.src = data.user.avatar;
                     profileImg.classList.remove('hidden');
                     profileInitials!.classList.add('hidden');
                 } else {
@@ -97,14 +113,12 @@ import Layout from '../layouts/Layout.astro';
         } catch (error) { console.error("Error cargando perfil:", error); }
     };
 
-    // 2. Subir nueva foto
     avatarContainer?.addEventListener('click', () => avatarInput.click());
 
     avatarInput?.addEventListener('change', async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        // Mostramos la imagen temporalmente para que parezca instantáneo
         profileImg.src = URL.createObjectURL(file);
         profileImg.classList.remove('hidden');
         profileInitials!.classList.add('hidden');
@@ -127,7 +141,7 @@ import Layout from '../layouts/Layout.astro';
             }
         } catch (error) {
             showToast('Error al subir la imagen', '❌');
-            loadProfile(); // Revertimos si falla
+            loadProfile();
         }
     });
 

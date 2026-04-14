@@ -79,17 +79,25 @@ const login = async (req, res) => {
   }
 };
 
-// Función 1: Obtener los datos del Perfil
 const getProfile = async (req, res) => {
     try {
         const userRes = await pool.query('SELECT id, username, email, avatar FROM users WHERE id = $1', [req.user.id]);
         
-        // ¡Corregido! Contamos todo directamente de tu tabla unificada 'consumptions'
-        const consumosGen = await pool.query("SELECT COUNT(*) FROM consumptions WHERE user_id = $1", [req.user.id]);
-        
-        const total = parseInt(consumosGen.rows[0].count);
+        const totalRes = await pool.query("SELECT COUNT(*) FROM consumptions WHERE user_id = $1", [req.user.id]);
+        const total = parseInt(totalRes.rows[0].count) || 0;
 
-        res.json({ success: true, user: userRes.rows[0], totalConsumos: total });
+        const consumosEvt = await pool.query("SELECT COUNT(*) FROM consumptions WHERE user_id = $1 AND event_id IS NOT NULL", [req.user.id]);
+        const totalEventos = parseInt(consumosEvt.rows[0].count) || 0;
+
+        const totalDiarios = total - totalEventos;
+
+        res.json({ 
+            success: true, 
+            user: userRes.rows[0], 
+            totalConsumos: total,
+            consumosDiarios: totalDiarios,
+            consumosEventos: totalEventos
+        });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
