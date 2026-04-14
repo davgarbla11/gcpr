@@ -79,6 +79,28 @@ const login = async (req, res) => {
   }
 };
 
+const updateAccount = async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        let query = "UPDATE users SET username = $1";
+        let params = [username, req.user.id];
+
+        // Si el usuario quiere cambiar la contraseña, la encriptamos
+        if (password && password.trim() !== "") {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            query = "UPDATE users SET username = $1, password = $2 WHERE id = $3";
+            params = [username, hashedPassword, req.user.id];
+        } else {
+            query = "UPDATE users SET username = $1 WHERE id = $2";
+        }
+
+        await pool.query(query, params);
+        res.json({ success: true, message: 'Cuenta actualizada correctamente' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 const getProfile = async (req, res) => {
     try {
         const userRes = await pool.query('SELECT id, username, email, avatar FROM users WHERE id = $1', [req.user.id]);
@@ -116,4 +138,4 @@ const uploadAvatar = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getProfile, uploadAvatar, upload };
+module.exports = { register, login, getProfile, uploadAvatar, upload, updateAccount };
