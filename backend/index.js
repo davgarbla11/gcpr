@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3003;
 
 // 2. CONFIGURAS LOS MIDDLEWARES BÁSICOS
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');

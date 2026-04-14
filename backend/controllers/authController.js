@@ -98,7 +98,7 @@ const uploadAvatar = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, error: 'No se subió ninguna imagen' });
         
-        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        const avatarUrl = `/api/uploads/avatars/${req.file.filename}`;
         await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatarUrl, req.user.id]);
         
         res.json({ success: true, avatarUrl });
